@@ -84,19 +84,25 @@ The **Leap Frog Highball** contains \_*2*\_oz of gin
 
 ### Exercise 3
 
-```{r}
-library(recipes)
-rec <- recipes::recipe(~ ., data = cleaned_data)
-
-basic <- rec %>%
-  # Standardize the values
-  recipes::step_center(recipes::all_predictors()) %>%
-  recipes::step_scale(recipes::all_predictors())
-
+```         
 ```
 
 ```{r}
-pca <- basic %>% 
+library(recipes)
+rec <- recipes::recipe(~ ., data = cleaned_data) %>%
+   update_role(name, category, new_role = "id")
+
+basic_cleaned <- rec %>%
+  # Standardize the values
+  recipes::step_center(recipes::all_predictors()) %>%
+  recipes::step_scale(recipes::all_predictors())
+```
+
+```         
+```
+
+```{r}
+pca <- basic_cleaned  %>% 
   recipes::step_pca(
     recipes::all_predictors()
     , threshold = .9
@@ -107,13 +113,46 @@ pca <- basic %>%
 pca %<>% recipes::prep() 
 ```
 
-\_\_\_ predictor variables are prepped by the recipe.
+```{r}
+prepared_data  <- recipes::bake(pca, new_data = NULL)
+```
+
+```{r Getting a summary}
+summary(prepared_data)
+```
+
+```{r}
+pca
+```
+
+\_40\_ predictor variables are prepped by the recipe.
 
 ### Exercise 4
 
-On average the most used ingredient in the Boston Cocktails dataset is \_\_\_\_.
+```{r}
+recipes::tidy(basic_cleaned)
+```
+
+```{r}
+recipes::tidy(basic_cleaned,1)
+```
+
+```{r}
+ingredient_usage <- colMeans(cleaned_data[, -c(1, 2)])  # Exclude 'name' and 'category' columns
+most_used_ingredient <- names(ingredient_usage)[which.max(ingredient_usage)]
+
+most_used_ingredient
+```
+
+On average the most used ingredient in the Boston Cocktails dataset is \_*gin*\_.
 
 ### Exercise 5
+
+```{r}
+prepared_data %>% 
+  select(name, gin) %>% 
+  filter(name == "Leap Frog Highball")
+```
 
 ```{r}
 ggplot(aes(value, terms, fill = terms)) +
