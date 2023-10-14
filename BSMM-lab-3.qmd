@@ -84,9 +84,6 @@ The **Leap Frog Highball** contains \_*2*\_oz of gin
 
 ### Exercise 3
 
-```         
-```
-
 ```{r}
 library(recipes)
 rec <- recipes::recipe(~ ., data = cleaned_data) %>%
@@ -94,11 +91,8 @@ rec <- recipes::recipe(~ ., data = cleaned_data) %>%
 
 basic_cleaned <- rec %>%
   # Standardize the values
-  recipes::step_center(recipes::all_predictors()) %>%
-  recipes::step_scale(recipes::all_predictors())
-```
-
-```         
+  recipes::step_select(where(is.numeric)) %>%
+  recipes::step_normalize(all_predictors())
 ```
 
 ```{r}
@@ -134,10 +128,10 @@ recipes::tidy(basic_cleaned)
 ```
 
 ```{r}
-recipes::tidy(basic_cleaned,1)
+recipes::tidy(basic_cleaned,2)
 ```
 
-```{r}
+```{r Finding the ingredient with the highest frequency}
 ingredient_usage <- colMeans(cleaned_data[, -c(1, 2)])  # Exclude 'name' and 'category' columns
 most_used_ingredient <- names(ingredient_usage)[which.max(ingredient_usage)]
 
@@ -148,10 +142,29 @@ On average the most used ingredient in the Boston Cocktails dataset is \_*gin*\_
 
 ### Exercise 5
 
+```{r load the required libraries}
+library(recipes)
+library(ggplot2)
+```
+
 ```{r}
-prepared_data %>% 
-  select(name, gin) %>% 
-  filter(name == "Leap Frog Highball")
+pca_result <- recipes::tidy(prepared_data, 2)
+```
+
+```{r}
+components_to_plot <- c("PC1", "PC2", "PC3", "PC4", "PC5")
+
+pca_result_filtered <- pca_result %>%
+  filter(column == "PC01" | column =="PC02" |column =="PC03" | column =="PC04"| column =="PC05")
+```
+
+```{r}
+colnames(pca_result_filtered )[1] ="component"
+```
+
+```{r}
+pca_result_filtered %>%
+  mutate(terms = forcats::fct_inorder(components_to_plot))
 ```
 
 ```{r}
@@ -168,9 +181,41 @@ Describe describe the drinks represented by PC1?
 
 ### Exercise 6
 
+```{r}
+pca_result_filtered2 <- pca_result %>%
+  filter(column == "PC01" | column =="PC02" |column =="PC03" | column =="PC04")
+```
+
+```{r}
+top_ingredients <- pca_result_filtered2 %>%
+  arrange(terms, desc(abs(value))) %>%
+  group_by(terms) %>%
+  slice_max(order_by = abs(value), n = 8)
+
+```
+
+```{r  generating a table}
+top_ingredients_table <- top_ingredients %>%
+  gt()
+
+```
+
 The characteristic alcoholic beverage of each of the first 4 principle components is \_\_\_.
 
 ### Exercise 7
+
+```{r}
+pca_recipe <- recipe(~ ., data = boston_cocktails) %>%
+  step_rm(name, category) %>%  # Remove name and category columns
+  step_normalize(all_predictors()) %>%  # Normalize predictors
+  step_pca(all_predictors(), num_comp = 2)  # Perform PCA with 2 components
+
+```
+
+```{r}
+prepped_data <- prep(pca_recipe) %>%
+  juice()
+```
 
 ```{r}
 ggplot(aes(PC1, PC2, label = name)) +
